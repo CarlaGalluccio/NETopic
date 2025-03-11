@@ -2,7 +2,7 @@ import random
 
 random.seed(1234)
 
-main_folder = '/Users/carlagalluccio/Desktop/Pubblicazioni/BDR/bbc/'
+main_folder = 'main_path/'
 
 src = main_folder + 'src'
 raw_data = main_folder + 'raw_data'
@@ -11,7 +11,6 @@ experiments = main_folder + 'experiments'
 coherence_folder = main_folder + 'coherence_folder'
 
 exec(open('libraries.py').read())
-
 exec(open('text_cleaner_function.py').read())
 exec(open('second_clean.py').read())
 exec(open('co_occurrence_matrix_function.py').read())
@@ -22,15 +21,17 @@ exec(open('louvain_function.py').read())
 stopwords_BBC = [line.rstrip('\n') for line in open(os.path.join(src, 'BBC.txt'), 'r', encoding = 'utf-8')]
 
 data_to_clean = os.path.join(tidy_data, 'bbc.json')
+
 text = 'all'
 reduction_method = 'stemming'
 n_gram = 1
 num_topic = 5
+tfidf = [0.01, 0.1, 1, 0]
+louv_param = [1, 1.07, 1.37, 1.50, 2]
+window_size = [2, 5, 10, 15, 20]
+type_co_occ = 'weighted'
 
 text_cleaner(raw_data, tidy_data, 'bbc.json', text, reduction_method, n_gram, stopwords_BBC)
-tfidf = [0.01, 0.1, 1, 0]
-
-louv_param = [1, 1.07, 1.37, 1.50, 2]
 
 for i in tfidf:
     for file_tfidf in os.listdir(tidy_data):
@@ -46,9 +47,6 @@ for file in os.listdir(tidy_data):
         
 for second_file in second_clean_file:
     second_clean(second_file)
-
-type_co_occ = 'weighted'
-window_size = [2, 5, 10, 15, 20]
 
 for i in range(1, 31):
     experiment_folder = experiments + '/experiment' + str(i)
