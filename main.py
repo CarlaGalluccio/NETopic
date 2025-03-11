@@ -1,81 +1,90 @@
-import os
 import random
-import shutil
+
 random.seed(1234)
 
-main_folder = 'main_path'
-folders = {
-    "src": "src",
-    "raw_data": "raw_data",
-    "tidy_data": "tidy_data",
-    "experiments": "experiments",
-    "coherence_folder": "coherence_folder"
-}
-folders = {key: os.path.join(main_folder, val) for key, val in folders.items()}
+main_folder = '/Users/carlagalluccio/Desktop/Pubblicazioni/BDR/bbc/'
 
-from libraries import *
-from text_cleaner_function import text_cleaner
-from second_clean import second_clean
-from co_occurrence_matrix_function import co_occurrence_matrix
-from tfidf_reduction_function import tfidf_reduct
-from co_matrix_to_edgelist_network_function import co_matrix_edgelist
-from louvain_function import louvain_function
+src = main_folder + 'src'
+raw_data = main_folder + 'raw_data'
+tidy_data = main_folder + 'tidy_data'
+experiments = main_folder + 'experiments'
+coherence_folder = main_folder + 'coherence_folder'
 
-stopwords_BBC = [line.strip() for line in open(os.path.join(folders["src"], 'BBC.txt'), encoding='utf-8')]
+exec(open('libraries.py').read())
 
+exec(open('text_cleaner_function.py').read())
+exec(open('second_clean.py').read())
+exec(open('co_occurrence_matrix_function.py').read())
+exec(open('tfidf_reduction_function.py').read())
+exec(open('co_matrix_to_edgelist_network_function.py').read())
+exec(open('louvain_function.py').read())
+
+stopwords_BBC = [line.rstrip('\n') for line in open(os.path.join(src, 'BBC.txt'), 'r', encoding = 'utf-8')]
+
+data_to_clean = os.path.join(tidy_data, 'bbc.json')
 text = 'all'
 reduction_method = 'stemming'
 n_gram = 1
 num_topic = 5
-tfidf_values = [0.01, 0.1, 1, 0]
-louv_params = [1, 1.07, 1.37, 1.50, 2]
-window_sizes = [2, 5, 10, 15, 20]
-type_co_occ = 'weighted'
 
-text_cleaner(folders["raw_data"], folders["tidy_data"], 'bbc.json', text, reduction_method, n_gram, stopwords_BBC)
+text_cleaner(raw_data, tidy_data, 'bbc.json', text, reduction_method, n_gram, stopwords_BBC)
+tfidf = [0.01, 0.1, 1, 0]
 
-for tfidf_value in tfidf_values:
-    for file_tfidf in os.listdir(folders["tidy_data"]):
+louv_param = [1, 1.07, 1.37, 1.50, 2]
+
+for i in tfidf:
+    for file_tfidf in os.listdir(tidy_data):
         if file_tfidf.endswith('preprocessed.json'):
-            data_to_reduct = os.path.join(folders["tidy_data"], file_tfidf)
-            tfidf_reduct(folders["tidy_data"], folders["tidy_data"], data_to_reduct, tfidf_value)
+            data_to_reduct = os.path.join(tidy_data, file_tfidf)
+    tfidf_value = i
+    tfidf_reduct(tidy_data, tidy_data, data_to_reduct, tfidf_value)
 
-second_clean_files = [os.path.join(folders["tidy_data"], f) for f in os.listdir(folders["tidy_data"]) if f.endswith('tfidf.json')]
-for file in second_clean_files:
-    second_clean(file)
+second_clean_file = []
+for file in os.listdir(tidy_data):
+    if file.endswith('tfidf.json'):
+        second_clean_file.append(os.path.join(tidy_data, file))
+        
+for second_file in second_clean_file:
+    second_clean(second_file)
+
+type_co_occ = 'weighted'
+window_size = [2, 5, 10, 15, 20]
 
 for i in range(1, 31):
-    experiment_folder = os.path.join(folders["experiments"], f'experiment{i}')
-    shutil.rmtree(experiment_folder, ignore_errors=True)
+    experiment_folder = experiments + '/experiment' + str(i)
+    
+    if os.path.exists(experiment_folder):
+        shutil.rmtree(experiment_folder)
     os.makedirs(experiment_folder)
     
+    
+    
     for j in range(1, 101):
-        exp_path = os.path.join(experiment_folder, f'exp{j}')
-        os.makedirs(exp_path, exist_ok=True)
+    	exp_path = experiment_folder + '/exp' + str(j)
+    	
+    	if os.path.exists(exp_path):
+        	shutil.rmtree(exp_path)
+    	os.makedirs(exp_path)
     
     j = 1
-    for file in os.listdir(folders["tidy_data"]):
-        if file.startswith('bbc_preprocessed') and file.endswith('tfidf.json'):
-            for tfidf_value in tfidf_values:
-                if file.endswith(f'_{tfidf_value}tfidf.json'):
-                    for w in window_sizes:
-                        for r in louv_params:
-                            exp_path = os.path.join(experiment_folder, f'exp{j}')
-                            co_occurrence_matrix(folders["tidy_data"], exp_path, file, type_co_occ, w)
-                            
-                            col_index_name = []
-                            for col_index_file in os.listdir(exp_path):
-                                if col_index_file.endswith('_matrix_columns.txt'):
-                                    with open(os.path.join(exp_path, col_index_file), encoding='utf-8') as f:
-                                        col_index_name = [line.strip() for line in f]
-                            
-                            for co_file in os.listdir(exp_path):
-                                if co_file.endswith('_matrix_sparse.npz'):
-                                    co_matrix_edgelist(exp_path, exp_path, co_file, col_index_name)
-                            
-                            for data_edgelist in os.listdir(exp_path):
-                                if data_edgelist.endswith('edgelist.txt'):
-                                    louvain_function(exp_path, exp_path, data_edgelist, r)
-                            
-                            j += 1
-
+    for file in os.listdir(tidy_data):    
+        for t in tfidf:
+        	for w in window_size:
+        		for r in louv_param:
+        			exp_path = experiment_folder + '/exp' + str(j)
+        			if file.startswith('bbc_preprocessed') and file.endswith('_' + str(t) + 'tfidf.json'):
+        				co_occurrence_matrix(tidy_data, exp_path, file, type_co_occ, w)
+        			
+        				for col_index_file in os.listdir(exp_path):
+        					if col_index_file.endswith('_matrix_columns.txt'):
+        						col_index_name = [line.rstrip('\n') for line in open(os.path.join(exp_path, col_index_file), 'r', encoding = 'utf-8')]
+        				
+        				for co_file in os.listdir(exp_path):
+        					if co_file.endswith('_matrix_sparse.npz'):
+        						co_matrix_edgelist(exp_path, exp_path, co_file, col_index_name)
+        					
+        				for data_edgelist in os.listdir(exp_path):
+        					if data_edgelist.endswith('edgelist.txt'):
+        						louvain_function(exp_path, exp_path, data_edgelist, r)
+        					
+        						j = j + 1
