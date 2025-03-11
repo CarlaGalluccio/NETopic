@@ -1,6 +1,8 @@
 import random
 random.seed(1234)
 
+from libraries import *
+
 main_folder = 'main_path'
 folders = {
     "src": "src",
@@ -11,7 +13,6 @@ folders = {
 }
 folders = {key: os.path.join(main_folder, val) for key, val in folders.items()}
 
-from libraries import *
 from text_cleaner_function import text_cleaner
 from second_clean import second_clean
 from co_occurrence_matrix_function import co_occurrence_matrix
